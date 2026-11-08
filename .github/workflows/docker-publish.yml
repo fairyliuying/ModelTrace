@@ -1,0 +1,64 @@
+name: Publish MCP Docker image
+
+# 构建 ModelTrace MCP 服务镜像并发布到 GitHub Packages (GHCR)。
+# 触发：推送到 main、推送 v* 版本 tag，或手动运行。
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "requirements-mcp.txt"
+      - "mcp_server.py"
+      - "fingerprint.py"
+      - "enrollment.py"
+      - "bank_builder.py"
+      - "challenge_suite.py"
+      - "data/**"
+      - ".github/workflows/docker-publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # 镜像名与仓库同名：ghcr.io/<owner>/modeltrace
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
