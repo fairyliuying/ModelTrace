@@ -11,6 +11,68 @@ python start.py
 
 页面地址为 `http://127.0.0.1:7860/`。
 
+## MCP 服务（本 fork 新增）
+
+本 fork 在上游基础上增加了 MCP（Model Context Protocol）服务 `mcp_server.py`，以 Docker 承载、stdio 传输，供 Codex 等 MCP 客户端直接调用。镜像由 GitHub Actions 自动构建并发布到 GitHub Packages：
+
+```text
+ghcr.io/fairyliuying/modeltrace:latest
+```
+
+> 首次发布后，如需公开拉取，请在 GitHub 仓库的 Packages 设置中把该容器包的可见性改为 Public（或将其与本仓库关联并继承仓库可见性）。
+
+### 工具一览
+
+| 工具 | 作用 |
+| --- | --- |
+| `get_challenges` | 生成 3 条归因挑战题，供会话内主代理亲自作答 |
+| `attribute_outputs` | 对 1~3 份挑战回答做指纹归因，返回家族与具体模型概率 |
+| `fingerprint_model` | 给定 Base URL / API Key / 模型名，自动调用 API 完成探测与归因 |
+| `list_bank_models` | 查看内置统一指纹库收录的家族与模型 |
+
+### 在 Codex 中安装
+
+在 Codex 的 `~/.codex/config.toml` 中加入：
+
+```toml
+[mcp_servers.modeltrace]
+command = "docker"
+args = ["run", "-i", "--rm", "ghcr.io/fairyliuying/modeltrace:latest"]
+```
+
+重启 Codex 后即可调用。例如直接对它说：
+
+> 用 modeltrace 的 get_challenges 给我 3 道挑战题，你亲自逐题作答（不要调用任何工具生成数字），然后把你的答案提交给 attribute_outputs，告诉我检测结果。
+
+这种用法不需要任何 API Key——作答的就是当前会话主代理本人，测的正是它所使用的模型指纹。
+
+如需让 `fingerprint_model` 免参数调用（自动探测某个 API 端点），在配置中传入环境变量，容器启动时读取：
+
+```toml
+[mcp_servers.modeltrace]
+command = "docker"
+args = ["run", "-i", "--rm",
+        "-e", "MODELTRACE_BASE_URL",
+        "-e", "MODELTRACE_API_KEY",
+        "-e", "MODELTRACE_MODEL",
+        "ghcr.io/fairyliuying/modeltrace:latest"]
+env = { MODELTRACE_BASE_URL = "https://api.example.com/v1", MODELTRACE_API_KEY = "sk-...", MODELTRACE_MODEL = "your-model-name" }
+```
+
+### 本地运行（不经 Codex）
+
+```bash
+python -m pip install -r requirements-mcp.txt
+python mcp_server.py   # stdio 模式，等待 MCP 客户端连接
+```
+
+或用 Docker 本地构建：
+
+```bash
+docker build -t modeltrace-mcp .
+docker run -i --rm modeltrace-mcp
+```
+
 ## GitHub Pages
 
 `static/index.html` 是不依赖后端的手动测试版本，归因计算和指纹库读取都在浏览器本地完成。仓库附带的 GitHub Actions 会将 `static/` 部署到 GitHub Pages。

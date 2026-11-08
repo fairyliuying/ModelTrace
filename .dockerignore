@@ -1,0 +1,19 @@
+.git
+.github
+.gitignore
+.gitattributes
+.dockerignore
+Dockerfile
+README.md
+LICENSE
+__pycache__
+*.pyc
+# 以下为 Web 版 / 插件 / 文档，MCP 镜像不需要
+app.py
+start.py
+requirements.txt
+templates/
+static/
+codex-plugin/
+.agents/
+rebuild_unified_bank.py
