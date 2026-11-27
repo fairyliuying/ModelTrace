@@ -11,7 +11,8 @@ COPY requirements-mcp.txt ./
 RUN pip install --no-cache-dir -r requirements-mcp.txt
 
 # MCP 服务入口与归因核心（fingerprint/enrollment 及其依赖模块）
-COPY mcp_server.py fingerprint.py enrollment.py bank_builder.py challenge_suite.py ./
+# v6 起 fingerprint/enrollment 依赖 v6_portable，bank_builder 依赖 v6_builder，缺一即启动失败
+COPY mcp_server.py fingerprint.py enrollment.py bank_builder.py challenge_suite.py v6_portable.py v6_builder.py ./
 # 指纹库与参考数据
 COPY data/ ./data/
 

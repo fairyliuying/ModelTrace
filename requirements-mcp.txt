@@ -1,3 +1,5 @@
 # MCP 服务（mcp_server.py）专用依赖，与 Web 版 requirements.txt 相互独立。
 mcp>=1.2,<2
 numpy>=1.26,<3
+# v6_builder 顶层 import scipy（经 bank_builder ← enrollment ← mcp_server 链路必需），版本对齐上游 requirements.txt
+scipy>=1.11,<2
